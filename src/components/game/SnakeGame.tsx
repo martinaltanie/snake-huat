@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-//import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 // Constants
-// const GRID_SIZE = 15;
 const CELL_SIZE = 20;
 const GRID_WIDTH = 15;
 const GRID_HEIGHT = 15;
