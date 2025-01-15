@@ -1,6 +1,79 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { DotGothic16 } from 'next/font/google';
+import upButtonSvg from '/public/assets/button-up.png';
+import downButtonSvg from '/public/assets/button-down.png';
+import leftButtonSvg from '/public/assets/button-left.png';
+import rightButtonSvg from '/public/assets/button-right.png';
+
+const dotGothic16 = DotGothic16({
+  subsets: ['latin'],
+  weight: ['400']
+});
+
+// Marquee Component and Styles
+const MarqueeStyles = () => (
+  <style jsx global>{`
+    .marquee-container {
+      height: 88px;
+      overflow: hidden;
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+    }
+    .marquee-wrapper {
+      display: inline-flex;
+      position: relative;
+      width: max-content;
+    }
+    .marquee-text {
+      color: #ed007d;
+      font-size: 3rem;
+      font-weight: bold;
+      white-space: nowrap;
+      display: inline-block;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      animation-duration: 50s;
+      padding-right: 50px;
+    }
+    .scroll-left {
+      animation-name: scrollLeft;
+    }
+    .scroll-right {
+      animation-name: scrollRight;
+    }
+    @keyframes scrollLeft {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    @keyframes scrollRight {
+      0% { transform: translateX(-50%); }
+      100% { transform: translateX(0); }
+    }
+  `}</style>
+);
+
+const Marquee = ({ direction = 'left' }) => {
+  const baseContent = "🐍 P R I S E 連 連";
+  const group = Array(15).fill(baseContent).join(' ');
+  
+  return (
+    <div className={"marquee-container " + dotGothic16.className} style={{ backgroundColor: 'transparent' }}>
+      <MarqueeStyles />
+      <div className="marquee-wrapper">
+        <div className={`marquee-text ${direction === 'left' ? 'scroll-left' : 'scroll-right'}`}>
+          {group}
+        </div>
+        <div className={`marquee-text ${direction === 'left' ? 'scroll-left' : 'scroll-right'}`}>
+          {group}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Constants
 const CELL_SIZE = 20;
@@ -41,6 +114,97 @@ type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
 
 type FoodCounts = {
   [K in FoodType]: number;
+};
+
+type ControllerImages = {
+  up: string;
+  down: string;
+  left: string;
+  right: string;
+};
+
+// Custom Button Component
+interface CustomControlButtonProps {
+  direction: Direction;
+  onClick: (direction: Direction) => void;
+  imageSrc: string;
+  className?: string;
+}
+
+const CustomControlButton: React.FC<CustomControlButtonProps> = ({ 
+  direction, 
+  onClick, 
+  imageSrc,
+  className 
+}) => {
+  return (
+    <button
+      className={`
+        w-20 h-20 
+        rounded-xl 
+        flex items-center justify-center 
+        transition-transform duration-200
+        hover:scale-110
+        overflow-hidden
+        ${className || ''}
+      `}
+      onClick={() => onClick(direction)}
+    >
+        <img 
+          src={imageSrc} 
+          alt={`${direction} button`}
+          className="w-20 h-20 object-contain"
+        />
+    </button>
+  );
+};
+
+// Custom controller component
+interface CustomGameControllerProps {
+  onDirectionChange: (direction: Direction) => void;
+  controllerImages: ControllerImages;
+}
+
+const CustomGameController: React.FC<CustomGameControllerProps> = ({ 
+  onDirectionChange,
+  controllerImages 
+}) => {
+  return (
+    <div className="relative w-60 h-60 mx-auto mt-6">
+      {/* Up button */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2">
+        <CustomControlButton 
+          direction="UP" 
+          onClick={onDirectionChange}
+          imageSrc={controllerImages.up}
+        />
+      </div>
+      
+      {/* Horizontal buttons */}
+      <div className="absolute top-1/2 -translate-y-1/2 w-full flex justify-between">
+        <CustomControlButton 
+          direction="LEFT" 
+          onClick={onDirectionChange}
+          imageSrc={controllerImages.left}
+        />
+        <CustomControlButton 
+          direction="RIGHT" 
+          onClick={onDirectionChange}
+          imageSrc={controllerImages.right}
+        />
+      </div>
+      
+      {/* Down button */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2">
+        <CustomControlButton 
+          direction="DOWN" 
+          onClick={onDirectionChange}
+          imageSrc={controllerImages.down}
+        />
+      </div>
+
+    </div>
+  );
 };
 
 // Pixel Art component for Snake Head
@@ -224,6 +388,14 @@ const SnakeGame: React.FC = () => {
   const [gameStarted, setGameStarted] = useState<boolean>(false);
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [animationFrame, setAnimationFrame] = useState<number>(0);
+
+  // Add controller images
+  const controllerImages: ControllerImages = {
+    up: '/assets/button-up.png',
+    down: '/assets/button-down.png',
+    left: '/assets/button-left.png',
+    right: '/assets/button-right.png'
+  };
 
   // Game reset function
   const resetGame = () => {
@@ -436,17 +608,32 @@ const SnakeGame: React.FC = () => {
 
   // Render
   return (
-    <div className="min-h-screen bg-black px-4 py-6">
-      <div className="max-w-sm mx-auto">
-        <h1 className="text-2xl font-bold text-yellow-300 text-center mb-6">
-          Gong Xi Fa Cai
-        </h1>
+    <div className="h-screen flex flex-col" style={{ backgroundColor: 'transparent' }}>
+    {/* Top marquee */}
+    <div style={{ backgroundColor: 'transparent' }}>
+    <Marquee direction="left" />
+    </div>
+
+    {/* Main game content */}
+    <div 
+      className={'flex-1 px-4 flex items-center justify-center ' + dotGothic16.className}
+      style={{
+        backgroundImage: `url('/assets/bg7.png')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundColor: '#000000',
+      }}
+    >
+      <div className="max-w-sm w-full mx-auto">
         
         <div 
-          className="relative bg-gray-900 rounded-lg overflow-hidden mx-auto border-4 border-gray-700"
+          className="relative overflow-hidden mx-auto"
           style={{
-            width: GRID_WIDTH * CELL_SIZE,
-            height: GRID_HEIGHT * CELL_SIZE
+            width: GRID_WIDTH * CELL_SIZE + 8,
+            height: GRID_HEIGHT * CELL_SIZE + 8,
+            backgroundColor: '#000000',
+            border: '3px solid #5bff3e'
           }}
         >
           {/* Snake body segments */}
@@ -505,57 +692,62 @@ const SnakeGame: React.FC = () => {
           )}
         </div>
 
-        {/* Control Buttons */}
-        <div className="relative w-48 h-48 mx-auto mt-4">
-          <button
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-gray-800 border-2 border-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-700 text-2xl text-white"
-            onClick={() => handleDirectionChange('UP')}
-          >
-            ▲
-          </button>
-          <button
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-800 border-2 border-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-700 text-2xl text-white"
-            onClick={() => handleDirectionChange('LEFT')}
-          >
-            ◀
-          </button>
-          <button
-            className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-800 border-2 border-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-700 text-2xl text-white"
-            onClick={() => handleDirectionChange('RIGHT')}
-          >
-            ▶
-          </button>
-          <button
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 bg-gray-800 border-2 border-gray-600 rounded-lg flex items-center justify-center hover:bg-gray-700 text-2xl text-white"
-            onClick={() => handleDirectionChange('DOWN')}
-          >
-            ▼
-          </button>
-        </div>
+        {/* Use the custom controller */}
+        <CustomGameController 
+          onDirectionChange={handleDirectionChange}
+          controllerImages={controllerImages}
+        />
       </div>
+
+      </div>
+        {/* Bottom marquee */}
+        <div style={{ backgroundColor: 'transparent' }}> 
+        <Marquee direction="right" />
+        </div>
 
       {/* Game Over Modal */}
       {gameOver && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center">
-          <div className="bg-gray-900 p-6 rounded-lg max-w-sm w-full mx-4 border-4 border-gray-700">
-            <h2 className="text-2xl font-bold text-red-500 text-center mb-4">Gong Xi!</h2>
-            <div className="text-center">
-              <p className="mb-4 text-white">Your lucky numbers are:</p>
+        <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }}>
+          <div 
+            className="p-6 max-w-sm w-full mx-4"
+            style={{
+              backgroundColor: '#260601',
+              border: '4px solid #ff71de'
+            }}
+          >
+            <h2 
+              className={"text-2xl font-bold text-center mb-4 " + dotGothic16.className}
+              style={{ color: '#ffce00' }}
+            >
+              🐍 SSSSPLENDID 🐍
+            </h2>
+            <div className={"text-center " + dotGothic16.className}>
+              <p 
+                className="mb-4"
+                style={{ color: '#e0e0e0' }}
+              >
+                here's your lucky numbers
+              </p>
               <div className="grid grid-cols-4 gap-4">
                 {FOOD_TYPES.map(type => (
                   <div key={type} className="text-center">
                     <div className="w-8 h-8 mx-auto mb-2">
                       <PixelSymbol type={type} />
                     </div>
-                    <div className="text-white">{foodCounts[type]}</div>
+                    <div style={{ color: '#e0e0e0' }}>{foodCounts[type]}</div>
                   </div>
                 ))}
               </div>
               <button 
-                className="mt-6 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg border-2 border-red-700"
+                className={"mt-6 px-4 py-2 hover:bg-opacity-90 transition-all duration-200" + dotGothic16.className}
+                style={{
+                  backgroundColor: '#000000',
+                  border: '2px solid #61f700',
+                  color: '#61f700'
+                }}
                 onClick={resetGame}
               >
-                Play Again
+                MAY THE GOD OF LUCK BE WITH YOU
               </button>
             </div>
           </div>
