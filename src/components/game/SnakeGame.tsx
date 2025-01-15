@@ -6,7 +6,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 const CELL_SIZE = 20;
 const GRID_WIDTH = 15;
 const GRID_HEIGHT = 15;
-const INITIAL_SNAKE_POSITION = { x: 7, y: 7 };
+const INITIAL_SNAKE_POSITION = { x: 7, y: 8 };
 const FOOD_TYPES = ['heart', 'smile', 'money', 'book'] as const;
 const FOOD_LIMIT = 9;
 
@@ -43,6 +43,80 @@ type FoodCounts = {
   [K in FoodType]: number;
 };
 
+// Pixel Art component for Snake Head
+interface SnakeHeadProps {
+  direction: Direction | null;
+  frame: number;
+}
+
+const SnakeHead: React.FC<SnakeHeadProps> = ({ direction, frame }) => {
+  const frames = [
+    // Frame 1
+    <svg key="frame1" viewBox="0 0 8 8" className="w-full h-full">
+      <rect x="1" y="1" width="4" height="1" fill="#4CAF50" />
+      <rect x="0" y="2" width="5" height="1" fill="#4CAF50" />
+      <rect x="0" y="3" width="2" height="4" fill="#4CAF50" />
+      <rect x="2" y="5" width="2" height="2" fill="#4CAF50" />
+      <rect x="4" y="3" width="2" height="4" fill="#4CAF50" />
+      <rect x="2" y="3" width="2" height="2" fill="#FFFFFF" />
+      <rect x="3" y="4" width="1" height="1" fill="#000000" />
+      <rect x="5" y="5" width="3" height="1" fill="#F81700" />
+    </svg>,
+    
+    // Frame 2
+    <svg key="frame2" viewBox="0 0 8 8" className="w-full h-full">
+      <rect x="1" y="1" width="4" height="1" fill="#4CAF50" />
+      <rect x="0" y="2" width="5" height="1" fill="#4CAF50" />
+      <rect x="0" y="3" width="2" height="4" fill="#4CAF50" />
+      <rect x="2" y="5" width="2" height="2" fill="#4CAF50" />
+      <rect x="4" y="3" width="2" height="4" fill="#4CAF50" />
+      <rect x="2" y="3" width="2" height="2" fill="#FFFFFF" />
+      <rect x="3" y="4" width="1" height="1" fill="#000000" />
+      <rect x="5" y="5" width="1" height="1" fill="#F81700" />
+    </svg>,
+    
+    // Frame 3
+    <svg key="frame1" viewBox="0 0 8 8" className="w-full h-full">
+      <rect x="1" y="1" width="4" height="1" fill="#4CAF50" />
+      <rect x="0" y="2" width="5" height="1" fill="#4CAF50" />
+      <rect x="0" y="3" width="2" height="4" fill="#4CAF50" />
+      <rect x="2" y="5" width="2" height="2" fill="#4CAF50" />
+      <rect x="4" y="3" width="2" height="4" fill="#4CAF50" />
+      <rect x="2" y="3" width="2" height="2" fill="#FFFFFF" />
+      <rect x="3" y="4" width="1" height="1" fill="#000000" />
+      <rect x="5" y="5" width="3" height="1" fill="#F81700" />
+    </svg>,
+    
+    // Frame 4
+    <svg key="frame2" viewBox="0 0 8 8" className="w-full h-full">
+      <rect x="1" y="1" width="4" height="1" fill="#4CAF50" />
+      <rect x="0" y="2" width="5" height="1" fill="#4CAF50" />
+      <rect x="0" y="3" width="2" height="4" fill="#4CAF50" />
+      <rect x="2" y="5" width="2" height="2" fill="#4CAF50" />
+      <rect x="4" y="3" width="2" height="4" fill="#4CAF50" />
+      <rect x="2" y="3" width="2" height="2" fill="#FFFFFF" />
+      <rect x="3" y="4" width="1" height="1" fill="#000000" />
+      <rect x="5" y="5" width="1" height="1" fill="#F81700" />
+    </svg>
+  
+  ];
+
+  return (
+    <div
+      style={{
+        transform: `
+          ${direction === 'UP' ? 'rotate(-90deg)' : ''}
+          ${direction === 'DOWN' ? 'rotate(90deg)' : ''}
+          ${direction === 'LEFT' ? 'scaleX(-1)' : ''}
+          ${direction === 'RIGHT' ? 'rotate(0deg)' : ''}
+        `
+      }}
+    >
+      {frames[frame]}
+    </div>
+  );
+};
+
 // Pixel Art Component for Food Symbols
 interface PixelSymbolProps {
   type: FoodType;
@@ -54,45 +128,70 @@ const PixelSymbol: React.FC<PixelSymbolProps> = ({ type }) => {
       case 'heart':
         return (
           <svg viewBox="0 0 8 8" className="w-full h-full">
-            <rect x="2" y="1" width="2" height="2" fill="#ff0066"/>
-            <rect x="4" y="1" width="2" height="2" fill="#ff0066"/>
-            <rect x="1" y="2" width="2" height="2" fill="#ff0066"/>
-            <rect x="3" y="2" width="2" height="2" fill="#ff3399"/>
-            <rect x="5" y="2" width="2" height="2" fill="#ff0066"/>
-            <rect x="2" y="3" width="2" height="2" fill="#ff3399"/>
-            <rect x="4" y="3" width="2" height="2" fill="#ff3399"/>
-            <rect x="3" y="4" width="2" height="2" fill="#ff3399"/>
+            <rect x="0" y="3" width="1" height="1" fill="#fceb3a"/>
+            <rect x="0" y="4" width="2" height="2" fill="#fbc107"/>
+            <rect x="1" y="6" width="4" height="1" fill="#fbc107"/>
+            <rect x="5" y="1" width="2" height="1" fill="#ffffff"/>
+            <rect x="3" y="2" width="4" height="3" fill="#ffffff"/>
+            <rect x="4" y="1" width="1" height="1" fill="#9a1d1d"/>
+            <rect x="3" y="2" width="1" height="1" fill="#9a1d1d"/>
+            <rect x="1" y="4" width="2" height="1" fill="#2e96f3"/>
+            <rect x="3" y="3" width="1" height="1" fill="#2e96f3"/>
+            <rect x="5" y="2" width="1" height="1" fill="#000000"/>
+            <rect x="2" y="5" width="3" height="1" fill="#259688"/>
+            <rect x="7" y="3" width="1" height="1" fill="#f52c6c"/>
+            <rect x="5" y="4" width="1" height="2" fill="#f99802"/>
+            <rect x="6" y="3" width="1" height="2" fill="#f99802"/>
+            <rect x="5" y="6" width="1" height="1" fill="#f97802"/>
+            <rect x="6" y="5" width="1" height="1" fill="#f97802"/>
           </svg>
         );
       case 'smile':
         return (
           <svg viewBox="0 0 8 8" className="w-full h-full">
-            <rect x="2" y="1" width="4" height="1" fill="#ffcc00"/>
-            <rect x="1" y="2" width="6" height="4" fill="#ffcc00"/>
-            <rect x="2" y="6" width="4" height="1" fill="#ffcc00"/>
-            <rect x="2" y="3" width="1" height="1" fill="#000000"/>
-            <rect x="5" y="3" width="1" height="1" fill="#000000"/>
-            <rect x="2" y="5" width="4" height="1" fill="#000000"/>
+            <rect x="1" y="3" width="6" height="4" fill="#fccdd2"/>
+            <rect x="2" y="2" width="4" height="1" fill="#fccdd2"/>
+            <rect x="3" y="1" width="2" height="1" fill="#fccdd2"/>
+            <rect x="2" y="2" width="1" height="1" fill="#efa3a3"/>
+            <rect x="1" y="3" width="1" height="2" fill="#efa3a3"/>
+            <rect x="0" y="5" width="1" height="1" fill="#4caf4f"/>
+            <rect x="1" y="6" width="2" height="1" fill="#4caf4f"/>
+            <rect x="6" y="6" width="1" height="1" fill="#4caf4f"/>
+            <rect x="0" y="4" width="1" height="1" fill="#8bc349"/>
+            <rect x="1" y="5" width="2" height="1" fill="#8bc349"/>
+            <rect x="3" y="6" width="1" height="1" fill="#8bc349"/>
+            <rect x="5" y="6" width="1" height="1" fill="#8bc349"/>
+            <rect x="6" y="5" width="2" height="1" fill="#8bc349"/>
+            <rect x="7" y="4" width="1" height="1" fill="#8bc349"/>
+            <rect x="4" y="2" width="1" height="1" fill="#feeced"/>
           </svg>
         );
       case 'money':
         return (
           <svg viewBox="0 0 8 8" className="w-full h-full">
-            <rect x="2" y="1" width="4" height="1" fill="#00cc66"/>
-            <rect x="1" y="2" width="6" height="4" fill="#00cc66"/>
-            <rect x="2" y="6" width="4" height="1" fill="#00cc66"/>
-            <rect x="3" y="2" width="2" height="4" fill="#004d26"/>
-            <rect x="2" y="3" width="4" height="2" fill="#004d26"/>
+            <rect x="2" y="1" width="4" height="6" fill="#fbc107"/>
+            <rect x="1" y="2" width="6" height="4" fill="#fbc107"/>
+            <rect x="2" y="1" width="1" height="1" fill="#f99802"/>
+            <rect x="1" y="2" width="1" height="4" fill="#f99802"/>
+            <rect x="2" y="6" width="1" height="1" fill="#f99802"/>
+            <rect x="5" y="1" width="1" height="1" fill="#fceb3a"/>
+            <rect x="6" y="2" width="1" height="1" fill="#fceb3a"/>
+            <rect x="4" y="3" width="1" height="2" fill="#fceb3a"/>
           </svg>
         );
       case 'book':
         return (
           <svg viewBox="0 0 8 8" className="w-full h-full">
-            <rect x="1" y="1" width="6" height="1" fill="#3366cc"/>
-            <rect x="1" y="2" width="6" height="4" fill="#3366cc"/>
-            <rect x="1" y="6" width="6" height="1" fill="#3366cc"/>
-            <rect x="4" y="2" width="1" height="4" fill="#1a3366"/>
-            <rect x="2" y="3" width="4" height="1" fill="#1a3366"/>
+            <rect x="3" y="1" width="2" height="1" fill="#fbc765"/>
+            <rect x="1" y="2" width="6" height="4" fill="#fbc765"/>
+            <rect x="0" y="3" width="8" height="2" fill="#fbc765"/>
+            <rect x="3" y="2" width="2" height="1" fill="#732102"/>
+            <rect x="1" y="3" width="6" height="2" fill="#732102"/>
+            <rect x="3" y="3" width="2" height="1" fill="#f97d41"/>
+            <rect x="2" y="4" width="4" height="1" fill="#f97d41"/>
+            <rect x="3" y="4" width="2" height="1" fill="#de4b01"/>
+            <rect x="2" y="5" width="4" height="1" fill="#de4b01"/>
+            <rect x="3" y="6" width="2" height="1" fill="#a63903"/>
           </svg>
         );
       default:
@@ -124,7 +223,7 @@ const SnakeGame: React.FC = () => {
   });
   const [gameStarted, setGameStarted] = useState<boolean>(false);
   const [gameOver, setGameOver] = useState<boolean>(false);
-  const [mouthOpen, setMouthOpen] = useState<boolean>(true);
+  const [animationFrame, setAnimationFrame] = useState<number>(0);
 
   // Game reset function
   const resetGame = () => {
@@ -143,7 +242,6 @@ const SnakeGame: React.FC = () => {
     });
     setGameStarted(false);
     setGameOver(false);
-    setMouthOpen(true);
   };
 
   // Direction change handler
@@ -206,13 +304,15 @@ const SnakeGame: React.FC = () => {
     }
   }, [spawnFood, foods.length]);
 
-  // Mouth animation effect
+  // Head animation effect
   useEffect(() => {
     if (!gameStarted || gameOver) return;
-    const mouthInterval = setInterval(() => {
-      setMouthOpen(prev => !prev);
-    }, 200);
-    return () => clearInterval(mouthInterval);
+    
+    const animationInterval = setInterval(() => {
+      setAnimationFrame(prev => (prev + 1) % 4); // Cycle through 4 frames
+    }, 150); // Slightly faster than game tick for smooth animation
+    
+    return () => clearInterval(animationInterval);
   }, [gameStarted, gameOver]);
 
   // Keyboard controls
@@ -373,19 +473,12 @@ const SnakeGame: React.FC = () => {
               top: snake.head.y * CELL_SIZE,
               width: CELL_SIZE,
               height: CELL_SIZE,
-              transform: `rotate(${
-                snake.direction === 'UP' ? '-90deg' :
-                snake.direction === 'DOWN' ? '90deg' :
-                snake.direction === 'LEFT' ? '180deg' : '0deg'
-              })`
             }}
           >
-            <svg viewBox="0 0 8 8" className="w-full h-full">
-              <rect x="1" y="1" width="6" height="6" fill="#ffcc00"/>
-              <rect x="2" y="2" width="1" height="1" fill="#000000"/>
-              <rect x="5" y="2" width="1" height="1" fill="#000000"/>
-              {mouthOpen && <rect x="3" y="4" width="3" height="2" fill="#000000"/>}
-            </svg>
+            <SnakeHead 
+            direction={snake.direction} 
+            frame={animationFrame}
+            />
           </div>
 
           {/* Food items */}
