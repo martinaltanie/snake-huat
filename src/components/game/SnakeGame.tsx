@@ -151,12 +151,7 @@ const CustomControlButton: React.FC<CustomControlButtonProps> = ({
   imageSrc,
   className 
 }) => {
-  const handleTouchStart = (e: React.TouchEvent) => {
-    e.preventDefault();
-    onClick(direction);
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     onClick(direction);
   };
@@ -173,8 +168,8 @@ const CustomControlButton: React.FC<CustomControlButtonProps> = ({
         overflow-hidden
         ${className || ''}
       `}
-      onTouchStart={handleTouchStart}
-      onMouseDown={handleMouseDown}
+      onTouchStart={handleClick}
+      onMouseDown={handleClick}
       style={{
         touchAction: 'manipulation',
         WebkitTapHighlightColor: 'transparent',
@@ -464,8 +459,9 @@ const SnakeGame: React.FC = () => {
         'LEFT': 'RIGHT',
         'RIGHT': 'LEFT'
       };
-      if (opposites[newDirection] !== prev.direction) {
-        return { ...prev, direction: newDirection };
+      if (opposites[newDirection] !== prev.direction && 
+        (prev.direction === null || newDirection !== prev.direction)) {
+      return { ...prev, direction: newDirection };
       }
       return prev;
     });
@@ -553,7 +549,14 @@ const SnakeGame: React.FC = () => {
   useEffect(() => {
     if (!gameStarted || gameOver) return;
 
+    let lastMove = Date.now();
     const moveSnake = () => {
+      const now = Date.now();
+      if (now - lastMove < gameSpeed) {
+        return; // Skip if not enough time has passed
+      }
+      lastMove = now;
+
       setSnake(prev => {
         const newHead = { ...prev.head };
         switch (prev.direction) {
@@ -660,7 +663,7 @@ const SnakeGame: React.FC = () => {
     >
       {/* Top Marquee */}
       <div className="w-full pb-4">
-        <Marquee direction="right" />
+        <Marquee direction="left" />
       </div>
 
       {/* Main Game Content */}
@@ -746,7 +749,7 @@ const SnakeGame: React.FC = () => {
 
       {/* Bottom Marquee */}
       <div className="w-full py-0">
-        <Marquee direction="left" />
+        <Marquee direction="right" />
       </div>
 
       {/* Game Over Modal */}
