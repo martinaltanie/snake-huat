@@ -15,18 +15,34 @@ const dotGothic16 = DotGothic16({
 // Marquee Component and Styles
 const MarqueeStyles = () => (
   <style jsx global>{`
+    @keyframes scrollLeft {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    @keyframes scrollRight {
+      0% { transform: translateX(-50%); }
+      100% { transform: translateX(0); }
+    }
     .marquee-container {
+      background: transparent !important;
       height: 88px;
       overflow: hidden;
       position: relative;
       width: 100%;
       display: flex;
       align-items: center;
+      -webkit-background-color: transparent !important;
+      -moz-background-color: transparent !important;
+      background-color: transparent !important;
     }
     .marquee-wrapper {
       display: inline-flex;
       position: relative;
       width: max-content;
+      background: transparent !important;
+      -webkit-background-color: transparent !important;
+      -moz-background-color: transparent !important;
+      background-color: transparent !important;
     }
     .marquee-text {
       color: #ed007d;
@@ -36,29 +52,27 @@ const MarqueeStyles = () => (
       display: inline-block;
       animation-timing-function: linear;
       animation-iteration-count: infinite;
-      animation-duration: 50s;
+      animation-duration: 300s;
       padding-right: 50px;
+      background: transparent !important;
+      -webkit-background-color: transparent !important;
+      -moz-background-color: transparent !important;
+      background-color: transparent !important;
     }
     .scroll-left {
       animation-name: scrollLeft;
+      background: transparent !important;
     }
     .scroll-right {
       animation-name: scrollRight;
-    }
-    @keyframes scrollLeft {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-    @keyframes scrollRight {
-      0% { transform: translateX(-50%); }
-      100% { transform: translateX(0); }
+      background: transparent !important;
     }
   `}</style>
 );
 
 const Marquee = ({ direction = 'left' }) => {
   const baseContent = "🐍 P R I S E 連 連";
-  const group = Array(15).fill(baseContent).join(' ');
+  const group = Array(60).fill(baseContent).join(' ');
   
   return (
     <div className={"marquee-container " + dotGothic16.className} style={{ backgroundColor: 'transparent' }}>
@@ -79,7 +93,7 @@ const Marquee = ({ direction = 'left' }) => {
 const CELL_SIZE = 20;
 const GRID_WIDTH = 15;
 const GRID_HEIGHT = 15;
-const INITIAL_SNAKE_POSITION = { x: 7, y: 8 };
+const INITIAL_SNAKE_POSITION = { x: 7, y: 7 };
 const FOOD_TYPES = ['heart', 'smile', 'money', 'book'] as const;
 const FOOD_LIMIT = 9;
 
@@ -137,23 +151,42 @@ const CustomControlButton: React.FC<CustomControlButtonProps> = ({
   imageSrc,
   className 
 }) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    onClick(direction);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onClick(direction);
+  };
+
   return (
     <button
       className={`
         w-20 h-20 
         rounded-xl 
         flex items-center justify-center 
-        transition-transform duration-200
-        hover:scale-110
+        active:scale-95
+        transition-transform duration-75
+        select-none
         overflow-hidden
         ${className || ''}
       `}
-      onClick={() => onClick(direction)}
+      onTouchStart={handleTouchStart}
+      onMouseDown={handleMouseDown}
+      style={{
+        touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent',
+        WebkitTouchCallout: 'none',
+        userSelect: 'none'
+      }}
     >
         <img 
           src={imageSrc} 
           alt={`${direction} button`}
-          className="w-20 h-20 object-contain"
+          className="w-20 h-20 object-contain pointer-events-none"
+          draggable="false"
         />
     </button>
   );
@@ -333,14 +366,16 @@ const PixelSymbol: React.FC<PixelSymbolProps> = ({ type }) => {
       case 'money':
         return (
           <svg viewBox="0 0 8 8" className="w-full h-full">
-            <rect x="2" y="1" width="4" height="6" fill="#fbc107"/>
-            <rect x="1" y="2" width="6" height="4" fill="#fbc107"/>
+            <rect x="2" y="1" width="4" height="2" fill="#fbc107"/>
+            <rect x="2" y="3" width="1" height="2" fill="#fbc107"/>
+            <rect x="2" y="5" width="4" height="2" fill="#fbc107"/>
+            <rect x="6" y="3" width="1" height="3" fill="#fbc107"/>
             <rect x="2" y="1" width="1" height="1" fill="#f99802"/>
             <rect x="1" y="2" width="1" height="4" fill="#f99802"/>
             <rect x="2" y="6" width="1" height="1" fill="#f99802"/>
+            <rect x="5" y="3" width="1" height="2" fill="#f99802"/>
             <rect x="5" y="1" width="1" height="1" fill="#fceb3a"/>
             <rect x="6" y="2" width="1" height="1" fill="#fceb3a"/>
-            <rect x="4" y="3" width="1" height="2" fill="#fceb3a"/>
           </svg>
         );
       case 'book':
@@ -388,6 +423,7 @@ const SnakeGame: React.FC = () => {
   const [gameStarted, setGameStarted] = useState<boolean>(false);
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [animationFrame, setAnimationFrame] = useState<number>(0);
+  const [gameSpeed, setGameSpeed] = useState<number>(250); // Starting speed: 250ms
 
   // Add controller images
   const controllerImages: ControllerImages = {
@@ -412,6 +448,7 @@ const SnakeGame: React.FC = () => {
       money: 0,
       book: 0
     });
+    setGameSpeed(200);
     setGameStarted(false);
     setGameOver(false);
   };
@@ -540,6 +577,9 @@ const SnakeGame: React.FC = () => {
         if (foodIndex !== -1) {
           const eatenFood = foods[foodIndex];
           
+          // Increase game speed when food is eaten
+          setGameSpeed(prevSpeed => Math.max(100, prevSpeed - 5)); // Decrease interval by 5ms, minimum 70ms
+
           const newFoodCounts = {
             ...foodCounts,
             [eatenFood.type]: foodCounts[eatenFood.type] + 1
@@ -602,21 +642,14 @@ const SnakeGame: React.FC = () => {
       });
     };
 
-    const gameLoop = setInterval(moveSnake, 200);
+    const gameLoop = setInterval(moveSnake, gameSpeed);
     return () => clearInterval(gameLoop);
-  }, [gameStarted, gameOver, foods, spawnFood, foodCounts]);
+  }, [gameStarted, gameOver, foods, spawnFood, foodCounts, gameSpeed]);
 
   // Render
   return (
-    <div className="h-screen flex flex-col" style={{ backgroundColor: 'transparent' }}>
-    {/* Top marquee */}
-    <div style={{ backgroundColor: 'transparent' }}>
-    <Marquee direction="left" />
-    </div>
-
-    {/* Main game content */}
     <div 
-      className={'flex-1 px-4 flex items-center justify-center ' + dotGothic16.className}
+      className="min-h-screen w-full flex flex-col"
       style={{
         backgroundImage: `url('/assets/bg7.png')`,
         backgroundSize: 'cover',
@@ -625,17 +658,24 @@ const SnakeGame: React.FC = () => {
         backgroundColor: '#000000',
       }}
     >
-      <div className="max-w-sm w-full mx-auto">
-        
-        <div 
-          className="relative overflow-hidden mx-auto"
-          style={{
-            width: GRID_WIDTH * CELL_SIZE + 8,
-            height: GRID_HEIGHT * CELL_SIZE + 8,
-            backgroundColor: '#000000',
-            border: '3px solid #5bff3e'
-          }}
-        >
+      {/* Top Marquee */}
+      <div className="w-full pb-4">
+        <Marquee direction="right" />
+      </div>
+
+      {/* Main Game Content */}
+      <div className={'flex-1 flex flex-col items-center justify-start ' + dotGothic16.className}>
+        {/* Game Canvas */}
+        <div className="max-w-sm w-full mx-auto">
+          <div 
+            className="relative overflow-hidden mx-auto"
+            style={{
+              width: GRID_WIDTH * CELL_SIZE + 8,
+              height: GRID_HEIGHT * CELL_SIZE + 8,
+              backgroundColor: '#000000',
+              border: '3px solid #5bff3e'
+            }}
+          >
           {/* Snake body segments */}
           {snake.body.map((segment, i) => (
             <div
@@ -686,24 +726,28 @@ const SnakeGame: React.FC = () => {
 
           {/* Start game message */}
           {!gameStarted && (
-            <div className="absolute inset-0 flex items-center justify-center text-white text-base bg-black bg-opacity-50">
-              Press any arrow key to start
+              <div className="absolute inset-0 flex items-center justify-center text-white text-base bg-black bg-opacity-50">
+                <div className="text-center px-4 max-w-[300px] mx-auto">
+                Tap on the snake head to start your lucky dance
+              </div>
             </div>
           )}
         </div>
 
-        {/* Use the custom controller */}
-        <CustomGameController 
-          onDirectionChange={handleDirectionChange}
-          controllerImages={controllerImages}
-        />
-      </div>
-
-      </div>
-        {/* Bottom marquee */}
-        <div style={{ backgroundColor: 'transparent' }}> 
-        <Marquee direction="right" />
+        {/* Controller with padding */}
+        <div className="py-0">
+            <CustomGameController 
+              onDirectionChange={handleDirectionChange}
+              controllerImages={controllerImages}
+            />
         </div>
+      </div>
+    </div>
+
+      {/* Bottom Marquee */}
+      <div className="w-full py-0">
+        <Marquee direction="left" />
+      </div>
 
       {/* Game Over Modal */}
       {gameOver && (
@@ -719,14 +763,14 @@ const SnakeGame: React.FC = () => {
               className={"text-2xl font-bold text-center mb-4 " + dotGothic16.className}
               style={{ color: '#ffce00' }}
             >
-              🐍 SSSSPLENDID 🐍
+              🐍 $$$$$PLENDID 🐍
             </h2>
             <div className={"text-center " + dotGothic16.className}>
               <p 
                 className="mb-4"
                 style={{ color: '#e0e0e0' }}
               >
-                here's your lucky numbers
+                Here's your lucky numbers
               </p>
               <div className="grid grid-cols-4 gap-4">
                 {FOOD_TYPES.map(type => (
