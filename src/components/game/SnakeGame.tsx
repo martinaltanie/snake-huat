@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { DotGothic16 } from 'next/font/google';
 import upButtonSvg from '/public/assets/button-up.png';
 import downButtonSvg from '/public/assets/button-down.png';
@@ -25,7 +25,7 @@ const MarqueeStyles = () => (
     }
     .marquee-container {
       background: transparent !important;
-      height: 88px;
+      height: 68px;
       overflow: hidden;
       position: relative;
       width: 100%;
@@ -89,11 +89,30 @@ const Marquee = ({ direction = 'left' }) => {
   );
 };
 
+const GlobalStyles = () => (
+  <style jsx global>{`
+    body {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      overscroll-behavior: contain;
+    }
+
+    * {
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+  `}</style>
+);
+
 // Constants
 const CELL_SIZE = 20;
 const GRID_WIDTH = 15;
 const GRID_HEIGHT = 15;
-const INITIAL_SNAKE_POSITION = { x: 7, y: 7 };
+const INITIAL_SNAKE_POSITION = { x: 7, y: 5 };
 const FOOD_TYPES = ['heart', 'smile', 'money', 'book'] as const;
 const FOOD_LIMIT = 9;
 
@@ -400,7 +419,135 @@ const PixelSymbol: React.FC<PixelSymbolProps> = ({ type }) => {
   );
 };
 
+//Hold button
+interface HoldButtonProps {
+  onComplete: () => void;
+  holdDuration?: number;
+  className?: string;
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+}
+
+const HoldButton: React.FC<HoldButtonProps> = ({
+  onComplete,
+  holdDuration = 3000, // Default 3 seconds
+  className = "",
+  children,
+  style
+}) => {
+  const [progress, setProgress] = useState(0);
+  const [isHolding, setIsHolding] = useState(false);
+  const progressInterval = useRef<number | null>(null);
+  const startTimeRef = useRef<number>(0);
+
+  const startHold = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Prevent context menu during hold
+    const preventContextMenu = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    
+    document.addEventListener('contextmenu', preventContextMenu);
+    
+    setIsHolding(true);
+    startTimeRef.current = Date.now();
+
+    progressInterval.current = window.setInterval(() => {
+      const elapsedTime = Date.now() - startTimeRef.current;
+      const newProgress = Math.min((elapsedTime / holdDuration) * 100, 100);
+      setProgress(newProgress);
+
+      if (newProgress >= 100) {
+        document.removeEventListener('contextmenu', preventContextMenu);
+        endHold();
+        onComplete();
+      }
+    }, 10);
+  };
+
+  const endHold = () => {
+    if (progressInterval.current) {
+      clearInterval(progressInterval.current);
+      progressInterval.current = null;
+    }
+    setIsHolding(false);
+    setProgress(0);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (progressInterval.current) {
+        clearInterval(progressInterval.current);
+      }
+    };
+  }, []);
+
+  return (
+    <div className="relative">
+      <button 
+        className={`
+          relative overflow-hidden
+          ${className}
+        `}
+        onTouchStart={startHold}
+        onTouchEnd={endHold}
+        onTouchCancel={endHold}
+        onMouseDown={startHold}
+        onMouseUp={endHold}
+        onMouseLeave={endHold}
+        style={{
+          ...style,
+          touchAction: 'manipulation',
+          WebkitTapHighlightColor: 'transparent',
+          WebkitTouchCallout: 'none',
+          userSelect: 'none'
+        }}
+      >
+        {/* Progress bar background */}
+        <div 
+          className="absolute inset-0 bg-gray-800 opacity-50"
+          style={{ transform: isHolding ? 'none' : 'translateX(-100%)' }}
+        />
+        
+        {/* Progress bar */}
+        <div 
+          className="absolute inset-0 bg-green-500 opacity-50 transition-transform duration-100 ease-linear"
+          style={{ 
+            transform: `translateX(${progress - 100}%)`,
+            transition: isHolding ? 'none' : 'transform 0.2s ease'
+          }}
+        />
+        
+        {/* Button content */}
+        <div className="relative z-10">
+          {children}
+        </div>
+      </button>
+    </div>
+  );
+};
+
 const SnakeGame: React.FC = () => {
+  const findSnakeBounds = (head: Position, body: BodySegment[]) => {
+    const allPositions = [...body, head];
+    const minX = Math.min(...allPositions.map(p => p.x));
+    const maxX = Math.max(...allPositions.map(p => p.x));
+    const minY = Math.min(...allPositions.map(p => p.y));
+    const maxY = Math.max(...allPositions.map(p => p.y));
+    
+    return {
+      minX,
+      maxX,
+      minY,
+      maxY,
+      width: maxX - minX + 1,
+      height: maxY - minY + 1
+    };
+  };
+  
   // State declarations
   const [snake, setSnake] = useState<Snake>({
     head: INITIAL_SNAKE_POSITION,
@@ -661,6 +808,8 @@ const SnakeGame: React.FC = () => {
         backgroundColor: '#000000',
       }}
     >
+      <GlobalStyles />
+
       {/* Top Marquee */}
       <div className="w-full pb-4">
         <Marquee direction="left" />
@@ -731,7 +880,7 @@ const SnakeGame: React.FC = () => {
           {!gameStarted && (
               <div className="absolute inset-0 flex items-center justify-center text-white text-base bg-black bg-opacity-50">
                 <div className="text-center px-4 max-w-[300px] mx-auto">
-                Tap on the snake head to start your lucky dance
+                Tap on the snake heads or arrow keys to start your lucky dance
               </div>
             </div>
           )}
@@ -753,53 +902,121 @@ const SnakeGame: React.FC = () => {
       </div>
 
       {/* Game Over Modal */}
-      {gameOver && (
-        <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }}>
-          <div 
-            className="p-6 max-w-sm w-full mx-4"
-            style={{
-              backgroundColor: '#260601',
-              border: '4px solid #ff71de'
-            }}
-          >
-            <h2 
-              className={"text-2xl font-bold text-center mb-4 " + dotGothic16.className}
-              style={{ color: '#ffce00' }}
-            >
-              🐍 $$$$$PLENDID 🐍
-            </h2>
-            <div className={"text-center " + dotGothic16.className}>
-              <p 
-                className="mb-4"
-                style={{ color: '#e0e0e0' }}
-              >
-                Here's your lucky numbers
-              </p>
-              <div className="grid grid-cols-4 gap-4">
-                {FOOD_TYPES.map(type => (
-                  <div key={type} className="text-center">
-                    <div className="w-8 h-8 mx-auto mb-2">
-                      <PixelSymbol type={type} />
-                    </div>
-                    <div style={{ color: '#e0e0e0' }}>{foodCounts[type]}</div>
-                  </div>
-                ))}
+{gameOver && (
+  <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }}>
+    <div 
+      className="p-6 max-w-sm w-full mx-4"
+      style={{
+        backgroundColor: '#260601',
+        border: '4px solid #ff71de'
+      }}
+    >
+      <h2 
+        className={"text-2xl font-bold text-center mb-4 tracking-normal " + dotGothic16.className}
+        style={{ color: '#ffce00' }}
+      >
+        🐍 $$$MASHING MOVE$$$ 🐍
+      </h2>
+      <div className={"text-center " + dotGothic16.className}>
+        {(() => {
+          const bounds = findSnakeBounds(snake.head, snake.body);
+          return (
+            <div className="w-full my-4">
+              <div className="mx-auto" style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${bounds.width}, 16px)`,
+                gridTemplateRows: `repeat(${bounds.height}, 16px)`,
+                gap: '1px',
+                width: 'fit-content'
+              }}>
+                {Array.from({ length: bounds.height }, (_, y) => 
+                  Array.from({ length: bounds.width }, (_, x) => {
+                    const actualX = x + bounds.minX;
+                    const actualY = y + bounds.minY;
+                    
+                    // Check if this position is the head
+                    if (actualX === snake.head.x && actualY === snake.head.y) {
+                      return (
+                        <div key={`${x}-${y}`} className="relative" style={{ width: '16px', height: '16px' }}>
+                          <SnakeHead direction={snake.direction} frame={0} />
+                        </div>
+                      );
+                    }
+                    
+                    // Check if this position is part of the body
+                    const bodySegment = snake.body.find(segment => 
+                      segment.x === actualX && segment.y === actualY
+                    );
+                    
+                    if (bodySegment) {
+                      return (
+                        <div key={`${x}-${y}`} className="relative" style={{ width: '16px', height: '16px' }}>
+                          <PixelSymbol type={bodySegment.type} />
+                        </div>
+                      );
+                    }
+                    
+                    // Empty cell
+                    return <div key={`${x}-${y}`} style={{ width: '16px', height: '16px' }} />;
+                  })
+                )}
               </div>
-              <button 
-                className={"mt-6 px-4 py-2 hover:bg-opacity-90 transition-all duration-200" + dotGothic16.className}
-                style={{
-                  backgroundColor: '#000000',
-                  border: '2px solid #61f700',
-                  color: '#61f700'
-                }}
-                onClick={resetGame}
-              >
-                MAY THE GOD OF LUCK BE WITH YOU
-              </button>
             </div>
-          </div>
+          );
+        })()}
+        <p 
+          className="mb-4 tracking-wide"
+          style={{ color: '#e0e0e0' }}
+        >
+          Go do something with this lucky figures!
+        </p>
+        <div className="grid grid-cols-4 gap-4">
+          {FOOD_TYPES.map(type => (
+            <div key={type} className="text-center">
+              <div className="w-8 h-8 mx-auto mb-2">
+                <PixelSymbol type={type} />
+              </div>
+              <div style={{ color: '#e0e0e0' }}>{foodCounts[type]}</div>
+            </div>
+          ))}
         </div>
-      )}
+        <HoldButton 
+          onComplete={resetGame}
+          holdDuration={1500} // 3 seconds hold duration
+          className={"mt-6 px-4 py-2 tracking-wider " + dotGothic16.className}
+          style={{
+            backgroundColor: '#000000',
+            border: '2px solid #61f700',
+            color: '#61f700'
+          }}
+        >
+          HOLD TO SUMMON THE GOD OF LUCK
+        </HoldButton>
+
+        {/* Creator Attribution */}
+        <div className="w-full text-center mt-6 mb-0 text-sm">
+          <p style={{ color: '#ffffff' }}>
+            Created by{' '}
+            <a 
+              href="https://www.popandstrange.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ 
+                color: '#ff71de',
+                textDecoration: 'none',
+                transition: 'color 0.2s ease'
+              }}
+              className="hover:opacity-80"
+            >
+              Pop & Strange
+            </a>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };
