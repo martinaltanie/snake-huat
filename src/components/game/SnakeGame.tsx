@@ -71,7 +71,7 @@ const MarqueeStyles = () => (
 );
 
 const Marquee = ({ direction = 'left' }) => {
-  const baseContent = "🐍 P R I S E 連 連";
+  const baseContent = " ⟡𓆗 蛇 P R I S E 連 連 ";
   const group = Array(60).fill(baseContent).join(' ');
   
   return (
@@ -112,7 +112,7 @@ const GlobalStyles = () => (
 const CELL_SIZE = 20;
 const GRID_WIDTH = 15;
 const GRID_HEIGHT = 15;
-const INITIAL_SNAKE_POSITION = { x: 7, y: 5 };
+const INITIAL_SNAKE_POSITION = { x: 7, y: 7 };
 const FOOD_TYPES = ['heart', 'smile', 'money', 'book'] as const;
 const FOOD_LIMIT = 9;
 
@@ -181,7 +181,7 @@ const CustomControlButton: React.FC<CustomControlButtonProps> = ({
         w-20 h-20 
         rounded-xl 
         flex items-center justify-center 
-        active:scale-95
+        active:scale-150
         transition-transform duration-75
         select-none
         overflow-hidden
@@ -549,6 +549,8 @@ const SnakeGame: React.FC = () => {
   };
   
   // State declarations
+  const [showTitleScreen, setShowTitleScreen] = useState<boolean>(true);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [snake, setSnake] = useState<Snake>({
     head: INITIAL_SNAKE_POSITION,
     body: [],
@@ -593,11 +595,13 @@ const SnakeGame: React.FC = () => {
     setGameSpeed(200);
     setGameStarted(false);
     setGameOver(false);
+    setShowTitleScreen(true);
+    setCountdown(null);
   };
 
   // Direction change handler
   const handleDirectionChange = useCallback((newDirection: Direction) => {
-    if (!gameStarted) setGameStarted(true);
+    if (!gameStarted || countdown !== null || showTitleScreen) return;
     
     setSnake(prev => {
       const opposites: Record<Direction, Direction> = {
@@ -612,7 +616,7 @@ const SnakeGame: React.FC = () => {
       }
       return prev;
     });
-  }, [gameStarted]);
+  }, [gameStarted, countdown, showTitleScreen]);
 
   // Food counting utility
   const getTotalFoodCount = useCallback((type: FoodType): number => {
@@ -694,7 +698,7 @@ const SnakeGame: React.FC = () => {
 
   // Game loop
   useEffect(() => {
-    if (!gameStarted || gameOver) return;
+    if (!gameStarted || gameOver || countdown !== null || showTitleScreen) return;
 
     let lastMove = Date.now();
     const moveSnake = () => {
@@ -794,7 +798,7 @@ const SnakeGame: React.FC = () => {
 
     const gameLoop = setInterval(moveSnake, gameSpeed);
     return () => clearInterval(gameLoop);
-  }, [gameStarted, gameOver, foods, spawnFood, foodCounts, gameSpeed]);
+  }, [gameStarted, gameOver, countdown, showTitleScreen, foods, spawnFood, foodCounts, gameSpeed]);
 
   // Render
   return (
@@ -876,15 +880,120 @@ const SnakeGame: React.FC = () => {
             </div>
           ))}
 
-          {/* Start game message */}
-          {!gameStarted && (
-              <div className="absolute inset-0 flex items-center justify-center text-white text-base bg-black bg-opacity-50">
-                <div className="text-center px-4 max-w-[300px] mx-auto">
-                Tap on the snake heads or arrow keys to start your lucky dance
+        {/* Countdown display */}
+        {countdown !== null && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                <div className="text-8xl font-bold animate-pulse" style={{ color: '#5bff3e' }}>
+                  {countdown}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+
+            {/* Title Screen */}
+            {showTitleScreen && (
+              <div className="fixed inset-0 flex items-center justify-center" 
+              style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 50 }}>
+                <div className="p-6 max-w-sm w-full mx-4"
+                     style={{
+                       backgroundColor: '#260601',
+                       border: '4px solid #ff71de'
+                     }}>
+                  <h2 className={"text-4xl font-bold text-center mb-0 tracking-normal " + dotGothic16.className}
+                      style={{ color: '#ffce00' }}>
+                    HUAT THE SNAKE
+                  </h2>
+                  <h3 className="text-xl font-bold text-center mb-4 tracking-normal" style={{ color: '#ffce00' }}>
+                    v1.0
+                  </h3>
+                    
+                  {/* How to Play Section */}
+                  <div className={"text-center " + dotGothic16.className}>
+                    <h3 className="text-xl mb-2" style={{ color: '#5bff3e' }}>
+                      How to Play
+                    </h3>
+                    <p className="mb-4" style={{ color: '#e0e0e0' }}>
+                      Navigate the fortune land with these snake head buttons:
+                    </p>
+
+                    {/* Controller Display */}
+                    <div className="relative w-24 h-24 mx-auto mb-4">
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2">
+                        <img src={controllerImages.up} alt="Up" className="w-8 h-8" />
+                      </div>
+                      <div className="absolute top-1/2 -translate-y-1/2 left-0">
+                        <img src={controllerImages.left} alt="Left" className="w-8 h-8" />
+                      </div>
+                      <div className="absolute top-1/2 -translate-y-1/2 right-0">
+                        <img src={controllerImages.right} alt="Right" className="w-8 h-8" />
+                      </div>
+                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2">
+                        <img src={controllerImages.down} alt="Down" className="w-8 h-8" />
+                      </div>
+                    </div>
+
+                    {/* Fortune Symbols */}
+                    <h3 className="text-xl mb-2" style={{ color: '#5bff3e' }}>
+                      Seek your fortunes
+                    </h3>
+                    <div className="grid grid-cols-4 gap-2 mb-6">
+                      {[
+                        { type: 'heart', meaning: 'love' },
+                        { type: 'smile', meaning: 'health' },
+                        { type: 'money', meaning: 'wealth' },
+                        { type: 'book', meaning: 'wisdom' }
+                      ].map(({ type, meaning }) => (
+                        <div key={type} className="text-center">
+                          <div className="w-6 h-6 mx-auto mb-1">
+                            <PixelSymbol type={type as FoodType} />
+                          </div>
+                          <div style={{ color: '#e0e0e0' }}>{meaning}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Start Button */}
+                    <button 
+                      onClick={() => {
+                        setShowTitleScreen(false);
+                        setCountdown(3);
+                        const countdownInterval = setInterval(() => {
+                          setCountdown(prev => {
+                            if (prev === 1) {
+                              clearInterval(countdownInterval);
+                              setGameStarted(true);
+                              setSnake(prevSnake => ({
+                                ...prevSnake,
+                                direction: 'RIGHT'
+                              }));
+                              return null;
+                            }
+                            return prev ? prev - 1 : null;
+                          });
+                        }, 1000);
+                      }}
+                      className={`
+                        px-4 py-2 tracking-wider 
+                        ${dotGothic16.className}
+                        transform transition-all duration-100
+                        hover:scale-95
+                        active:scale-90
+                        active:brightness-150
+                        hover:brightness-125
+                      `}
+                      style={{
+                        backgroundColor: '#000000',
+                        border: '2px solid #61f700',
+                        color: '#61f700',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      START GAME
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
         {/* Controller with padding */}
         <div className="py-0">
@@ -915,7 +1024,7 @@ const SnakeGame: React.FC = () => {
         className={"text-2xl font-bold text-center mb-4 tracking-normal " + dotGothic16.className}
         style={{ color: '#ffce00' }}
       >
-        🐍 $$$MASHING MOVE$$$ 🐍
+         $$$MASHING MOVE$$$
       </h2>
       <div className={"text-center " + dotGothic16.className}>
         {(() => {
@@ -968,7 +1077,7 @@ const SnakeGame: React.FC = () => {
           className="mb-4 tracking-wide"
           style={{ color: '#e0e0e0' }}
         >
-          Go do something with this lucky figures!
+          Go do something with these lucky figures!
         </p>
         <div className="grid grid-cols-4 gap-4">
           {FOOD_TYPES.map(type => (
@@ -982,15 +1091,15 @@ const SnakeGame: React.FC = () => {
         </div>
         <HoldButton 
           onComplete={resetGame}
-          holdDuration={1500} // 3 seconds hold duration
-          className={"mt-6 px-4 py-2 tracking-wider " + dotGothic16.className}
+          holdDuration={1000} // 3 seconds hold duration
+          className={"mt-6 px-4 py-3 tracking-wider " + dotGothic16.className}
           style={{
             backgroundColor: '#000000',
             border: '2px solid #61f700',
             color: '#61f700'
           }}
         >
-          HOLD TO SUMMON THE GOD OF LUCK
+          TAP & HOLD TO PLAY AGAIN
         </HoldButton>
 
         {/* Creator Attribution */}
