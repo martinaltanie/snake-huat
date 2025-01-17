@@ -1021,7 +1021,7 @@ const SnakeGame: React.FC = () => {
       }}
     >
       <h2 
-        className={"text-2xl font-bold text-center mb-4 tracking-normal " + dotGothic16.className}
+        className={"text-2xl font-bold text-center mb-4 tracking-wider " + dotGothic16.className}
         style={{ color: '#ffce00' }}
       >
          $$$MASHING MOVE$$$
@@ -1079,13 +1079,13 @@ const SnakeGame: React.FC = () => {
         >
           Go do something with these lucky figures!
         </p>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 gap-0">
           {FOOD_TYPES.map(type => (
             <div key={type} className="text-center">
-              <div className="w-8 h-8 mx-auto mb-2">
+              <div className="w-5 h-5 mx-auto mb-2">
                 <PixelSymbol type={type} />
               </div>
-              <div style={{ color: '#e0e0e0' }}>{foodCounts[type]}</div>
+              <div className="text-2xl font-bold" style={{ color: '#e0e0e0' }}>{foodCounts[type]}</div>
             </div>
           ))}
         </div>
