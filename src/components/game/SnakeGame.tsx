@@ -843,7 +843,7 @@ const SnakeGame: React.FC = () => {
     <div 
       className="min-h-screen w-full flex flex-col"
       style={{
-        backgroundImage: `url('/assets/bg7.png')`,
+        backgroundImage: `url('/assets/bg12.png')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
