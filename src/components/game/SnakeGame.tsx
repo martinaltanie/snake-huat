@@ -567,7 +567,7 @@ const SnakeGame: React.FC = () => {
   const [gameStarted, setGameStarted] = useState<boolean>(false);
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [animationFrame, setAnimationFrame] = useState<number>(0);
-  const [gameSpeed, setGameSpeed] = useState<number>(250); // Starting speed: 250ms
+  const [gameSpeed, setGameSpeed] = useState<number>(200); // Starting speed: 200ms
 
   // Add controller images
   const controllerImages: ControllerImages = {
@@ -732,7 +732,7 @@ const SnakeGame: React.FC = () => {
           const eatenFood = foods[foodIndex];
           
           // Increase game speed when food is eaten
-          setGameSpeed(prevSpeed => Math.max(100, prevSpeed - 5)); // Decrease interval by 5ms, minimum 70ms
+          setGameSpeed(prevSpeed => Math.max(80, prevSpeed - 8)); // Decrease interval by 5ms, minimum 70ms
 
           const newFoodCounts = {
             ...foodCounts,
@@ -1077,7 +1077,50 @@ const SnakeGame: React.FC = () => {
           className="mb-4 tracking-wide"
           style={{ color: '#e0e0e0' }}
         >
-          Go do something with these lucky figures!
+          {(() => {
+            // Messages for each category
+            const messages = {
+              heart: [
+                "Love's in the air, vibes on point, squad goals!",
+                "Relationships lit AF, expect epic feels all year.",
+                "Crushing it with connections, good juju everywhere.",
+                "Love is real, vibes are golden."
+              ],
+              smile: [
+                "Living my best life, health goals on lock.",
+                "Feeling the power, energy levels maxed out.",
+                "Healthy vibes only, let's keep this glow up going.",
+                "Energy boosted, living fierce."
+              ],
+              money: [
+                "Cha-ching! Cash flow goals, watch that bank grow.",
+                "Dolla dolla bills, y'all. Hustle smart, live large.",
+                "Money moves, grind hard, stay blessed, flex responsibly.",
+                "Money flows, hustle rewards."
+              ],
+              book: [
+                "Chill vibes, level-up your zen game this year.",
+                "Mindset on fleek, peace out stress, slay life.",
+                "Inner peace unlocked, ready to crush those vibes.",
+                "Mind at ease, vibes on chill."
+              ]
+            };
+
+            // Find the food type with the highest count
+            const maxCount = Math.max(...Object.values(foodCounts));
+            const maxTypes = Object.entries(foodCounts)
+              .filter(([_, count]) => count === maxCount)
+              .map(([type]) => type);
+            
+            // If there are multiple types with the same count, take the first one
+            const dominantType = maxTypes[0] as FoodType;
+            
+            // Get random message for the dominant type
+            const typeMessages = messages[dominantType];
+            const randomIndex = Math.floor(Math.random() * typeMessages.length);
+            
+            return typeMessages[randomIndex];
+          })()}
         </p>
         <div className="grid grid-cols-4 gap-0">
           {FOOD_TYPES.map(type => (
