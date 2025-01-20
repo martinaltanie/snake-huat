@@ -639,16 +639,37 @@ const SnakeGame: React.FC = () => {
     }
 
     let x: number, y: number;
+    let attempts = 0;
+    const maxAttempts = 100; // Prevent infinite loop if grid is too full
+
+    const isPositionOccupied = (checkX: number, checkY: number) => {
+      // Check snake head
+      if (snake.head.x === checkX && snake.head.y === checkY) return true;
+      
+      // Check snake body
+      if (snake.body.some(segment => segment.x === checkX && segment.y === checkY)) return true;
+      
+      // Check existing foods
+      if (foods.some(food => food.x === checkX && food.y === checkY)) return true;
+      
+      return false;
+    };
+    
     do {
       x = Math.floor(Math.random() * GRID_WIDTH);
       y = Math.floor(Math.random() * GRID_HEIGHT);
-    } while (
-      (snake.head.x === x && snake.head.y === y) ||
-      snake.positions.some(pos => pos.x === x && pos.y === y) ||
-      foods.some(food => food.x === x && food.y === y)
-    );
-
-    setFoods(prev => [...prev, { x, y, type }]);
+      attempts++;
+      
+      if (attempts >= maxAttempts) {
+        return; // Give up if no free space found
+      }
+    } while (isPositionOccupied(x, y));
+    
+    setFoods(prev => {
+      // Double check for overlaps before adding
+      if (isPositionOccupied(x, y)) return prev;
+      return [...prev, { x, y, type }];
+    });
   }, [snake, foods, getTotalFoodCount]);
 
   // Initial food spawn
@@ -767,19 +788,33 @@ const SnakeGame: React.FC = () => {
           setFoods(prevFoods => {
             // Remove the eaten food
             const remainingFoods = prevFoods.filter((_, i) => i !== foodIndex);
+            const newFoods: Food[] = [];
             
-            // Randomly reposition remaining foods
-            return remainingFoods.map(food => {
+            // Helper function to check position validity
+            const isPositionAvailable = (checkX: number, checkY: number, currentFoods: Food[]) => {
+              // Check snake
+              if (snake.head.x === checkX && snake.head.y === checkY) return false;
+              if (snake.body.some(segment => segment.x === checkX && segment.y === checkY)) return false;
+              
+              // Check other foods (including newly positioned ones)
+              if (currentFoods.some(f => f.x === checkX && f.y === checkY)) return false;
+              if (newFoods.some(f => f.x === checkX && f.y === checkY)) return false;
+              
+              return true;
+            };
+          
+            // Reposition each remaining food
+            for (const food of remainingFoods) {
               let newX = food.x;
               let newY = food.y;
               let attempts = 0;
-              const maxAttempts = 100; // Prevent infinite loops
+              const maxAttempts = 100;
               
               while (attempts < maxAttempts) {
                 const tempX = Math.floor(Math.random() * GRID_WIDTH);
                 const tempY = Math.floor(Math.random() * GRID_HEIGHT);
                 
-                if (isPositionValid(tempX, tempY, food, remainingFoods)) {
+                if (isPositionAvailable(tempX, tempY, remainingFoods)) {
                   newX = tempX;
                   newY = tempY;
                   break;
@@ -787,8 +822,10 @@ const SnakeGame: React.FC = () => {
                 attempts++;
               }
               
-              return { ...food, x: newX, y: newY };
-            });
+              newFoods.push({ ...food, x: newX, y: newY });
+            }
+            
+            return newFoods;
           });
 
           spawnFood();
