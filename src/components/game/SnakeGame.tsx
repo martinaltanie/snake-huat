@@ -747,10 +747,48 @@ const SnakeGame: React.FC = () => {
           }
 
           setFoodCounts(newFoodCounts);
+
+          // Create a function to check position validity
+          const isPositionValid = (x: number, y: number, currentFood: Food, foods: Food[]) => {
+            // Check if position overlaps with snake
+            const overlapWithSnake = (
+              x === prev.head.x && y === prev.head.y ||
+              prev.positions.some(pos => pos.x === x && pos.y === y)
+            );
+
+            // Check if position overlaps with other foods
+            const overlapWithFoods = foods.some(
+              otherFood => otherFood !== currentFood && otherFood.x === x && otherFood.y === y
+            );
+
+            return !overlapWithSnake && !overlapWithFoods;
+          };
+
           setFoods(prevFoods => {
-            const newFoods = [...prevFoods];
-            newFoods.splice(foodIndex, 1);
-            return newFoods;
+            // Remove the eaten food
+            const remainingFoods = prevFoods.filter((_, i) => i !== foodIndex);
+            
+            // Randomly reposition remaining foods
+            return remainingFoods.map(food => {
+              let newX = food.x;
+              let newY = food.y;
+              let attempts = 0;
+              const maxAttempts = 100; // Prevent infinite loops
+              
+              while (attempts < maxAttempts) {
+                const tempX = Math.floor(Math.random() * GRID_WIDTH);
+                const tempY = Math.floor(Math.random() * GRID_HEIGHT);
+                
+                if (isPositionValid(tempX, tempY, food, remainingFoods)) {
+                  newX = tempX;
+                  newY = tempY;
+                  break;
+                }
+                attempts++;
+              }
+              
+              return { ...food, x: newX, y: newY };
+            });
           });
 
           spawnFood();
@@ -905,7 +943,21 @@ const SnakeGame: React.FC = () => {
                   <h3 className="text-xl font-bold text-center mb-4 tracking-normal" style={{ color: '#ffce00' }}>
                     v1.0
                   </h3>
-                    
+
+                  {/* Divider */}
+                  <div className="mx-1 my-1">
+                    <div 
+                      style={{ 
+                        borderBottom: '2px dashed #ff71de',
+                        width: '100%'
+                      }} 
+                    />
+                  </div>
+                  <p 
+                    className="mb-4 tracking-wide"
+                    style={{ color: '#e0e0e0' }}
+                  ></p>
+
                   {/* How to Play Section */}
                   <div className={"text-center " + dotGothic16.className}>
                     <h3 className="text-xl mb-2" style={{ color: '#5bff3e' }}>
@@ -930,6 +982,20 @@ const SnakeGame: React.FC = () => {
                         <img src={controllerImages.down} alt="Down" className="w-8 h-8" />
                       </div>
                     </div>
+
+                    {/* Divider */}
+                    <div className="mx-1 my-1">
+                      <div 
+                        style={{ 
+                          borderBottom: '2px dashed #ff71de',
+                          width: '100%'
+                        }} 
+                      />
+                    </div>
+                    <p 
+                      className="mb-4 tracking-wide"
+                      style={{ color: '#e0e0e0' }}
+                    ></p>
 
                     {/* Fortune Symbols */}
                     <h3 className="text-xl mb-2" style={{ color: '#5bff3e' }}>
@@ -1073,6 +1139,25 @@ const SnakeGame: React.FC = () => {
             </div>
           );
         })()}
+        
+        {/* Divider */}
+        <div className="mx-4 mt-4 mb-4">
+          <div 
+            style={{ 
+              borderBottom: '2px dashed #ff71de',
+              width: '100%'
+            }} 
+          />
+        </div>
+        <p 
+          className="mb-4 tracking-wide"
+          style={{ color: '#e0e0e0' }}
+        ></p>
+
+        <h3 className="text-xl mb-1" style={{ color: '#5bff3e' }}>
+                      Your 2025 Fortune:
+                      </h3>
+
         <p 
           className="mb-4 tracking-wide"
           style={{ color: '#e0e0e0' }}
@@ -1125,17 +1210,32 @@ const SnakeGame: React.FC = () => {
         <div className="grid grid-cols-4 gap-0">
           {FOOD_TYPES.map(type => (
             <div key={type} className="text-center">
-              <div className="w-5 h-5 mx-auto mb-2">
+              <div className="w-4 h-4 mx-auto mb-1">
                 <PixelSymbol type={type} />
               </div>
               <div className="text-2xl font-bold" style={{ color: '#e0e0e0' }}>{foodCounts[type]}</div>
             </div>
           ))}
         </div>
+        
+        {/* Divider */}
+        <div className="mx-4 my-5">
+          <div 
+            style={{ 
+              borderBottom: '2px dashed #ff71de',
+              width: '100%'
+            }} 
+          />
+        </div>
+        <p 
+          className="mb-4 tracking-wide"
+          style={{ color: '#e0e0e0' }}
+        ></p>
+        
         <HoldButton 
           onComplete={resetGame}
           holdDuration={1000} // 3 seconds hold duration
-          className={"mt-6 px-4 py-3 tracking-wider " + dotGothic16.className}
+          className={"mt-0 px-4 py-2 tracking-wider " + dotGothic16.className}
           style={{
             backgroundColor: '#000000',
             border: '2px solid #61f700',
@@ -1146,7 +1246,7 @@ const SnakeGame: React.FC = () => {
         </HoldButton>
 
         {/* Creator Attribution */}
-        <div className="w-full text-center mt-6 mb-0 text-sm">
+        <div className="w-full text-center mt-5 mb-0 text-sm">
           <p style={{ color: '#ffffff' }}>
             Created by{' '}
             <a 
